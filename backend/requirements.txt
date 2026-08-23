@@ -1,0 +1,8 @@
+Flask
+Flask-SQLAlchemy
+Flask-CORS
+opencv-python
+Pillow
+pytesseract
+numpy
+Werkzeug
