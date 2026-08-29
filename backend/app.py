@@ -262,7 +262,7 @@ def get_player_stats():
     
     return jsonify(stats)
 
-Python
+
 import os
 
 if __name__ == '__main__':
