@@ -1,6 +1,7 @@
 Flask
 Flask-SQLAlchemy
 Flask-CORS
+psycopg2-binary
 opencv-python
 Pillow
 pytesseract
