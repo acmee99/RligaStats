@@ -9,6 +9,7 @@ const api = axios.create({
 // Players
 export const getPlayers = () => api.get('/players');
 export const createPlayer = (name) => api.post('/players', { name });
+export const updatePlayer = (id, name) => api.put(`/players/${id}`, { name });
 export const deletePlayer = (id) => api.delete(`/players/${id}`);
 
 // Teams

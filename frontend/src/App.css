@@ -44,6 +44,7 @@ input[type="text"] {
   border-bottom: 3px solid var(--pl-magenta);
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
   padding: 0.75rem 0;
+  text-transform: none;
 }
 
 .nav-container {
@@ -65,7 +66,7 @@ input[type="text"] {
   text-decoration: none;
   font-weight: 800;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .nav-logo-img {
@@ -81,9 +82,9 @@ input[type="text"] {
   display: block;
   font-size: 0.65rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   color: #6b6570;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .nav-menu {
@@ -96,9 +97,9 @@ input[type="text"] {
   color: var(--pl-purple);
   text-decoration: none;
   font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
   padding: 0.65rem 0.9rem;
   border-radius: 2px;
 }
@@ -128,8 +129,7 @@ input[type="text"] {
 .hero-kicker {
   color: var(--pl-magenta);
   font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   font-size: 0.75rem;
   margin-bottom: 0.4rem;
 }
@@ -137,9 +137,34 @@ input[type="text"] {
 .hero h1 {
   font-size: clamp(1.8rem, 4vw, 2.8rem);
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   margin-bottom: 0.4rem;
+}
+
+.dashboard-page,
+.dashboard-page .season-selector {
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.dashboard-page .card h2,
+.dashboard-page .card h3,
+.dashboard-page .btn,
+.dashboard-page .table th,
+.dashboard-page .hero-kicker,
+.dashboard-page .hero h1 {
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.players-page,
+.players-page .card h2,
+.players-page .card h3,
+.players-page .btn,
+.players-page .table th,
+.players-page .form-group label {
+  text-transform: none;
+  letter-spacing: 0.02em;
 }
 
 .hero-copy p:last-child {

@@ -122,12 +122,12 @@ const Dashboard = () => {
   }
 
   return (
-    <div>
+    <div className="dashboard-page">
       <section className="hero">
         <div className="hero-copy">
-          <p className="hero-kicker">Match Centre</p>
+          <p className="hero-kicker">Match centre</p>
           <h1>Black vs White</h1>
-          <p>Season stats, results and player numbers — inspired by a premier-league night under the lights.</p>
+          <p>Black vs White. Every goal, assist and result — one league, one table.</p>
         </div>
       </section>
       <div className="card">
@@ -154,7 +154,7 @@ const Dashboard = () => {
           <div className="loading">Loading statistics...</div>
         ) : (
           <>
-            <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>Team Statistics</h3>
+            <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>Team statistics</h3>
             <div className="stats-grid">
               {teamStats.map(stat => (
                 <div key={stat.team.id} className="stat-card">
@@ -164,7 +164,7 @@ const Dashboard = () => {
                     <small>Wins: {stat.wins} | Draws: {stat.draws} | Losses: {stat.losses}</small>
                   </div>
                   <div style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
-                    Total Matches: {stat.total_matches}
+                    Total matches: {stat.total_matches}
                   </div>
                 </div>
               ))}
@@ -219,18 +219,18 @@ const Dashboard = () => {
               </table>
             )}
 
-            <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>Player Statistics</h3>
+            <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>Player statistics</h3>
             <table className="table">
               <thead>
                 <tr>
                   <th className="sortable" onClick={() => handleSort('player')}>Player{sortMark('player')}</th>
                   <th className="sortable" onClick={() => handleSort('total_goals')}>Goals{sortMark('total_goals')}</th>
                   <th className="sortable" onClick={() => handleSort('total_assists')}>Assists{sortMark('total_assists')}</th>
-                  <th className="sortable" onClick={() => handleSort('matches_played')}>Matches Played{sortMark('matches_played')}</th>
+                  <th className="sortable" onClick={() => handleSort('matches_played')}>Matches played{sortMark('matches_played')}</th>
                   <th className="sortable" onClick={() => handleSort('matches_black')}>Black team{sortMark('matches_black')}</th>
                   <th className="sortable" onClick={() => handleSort('matches_white')}>White team{sortMark('matches_white')}</th>
                   <th className="sortable" onClick={() => handleSort('points')}>Points{sortMark('points')}</th>
-                  <th className="sortable" onClick={() => handleSort('ppm')}>PPM{sortMark('ppm')}</th>
+                  <th className="sortable" onClick={() => handleSort('ppm')}>Ppm{sortMark('ppm')}</th>
                   <th className="sortable" onClick={() => handleSort('ranking')}>Ranking{sortMark('ranking')}</th>
                 </tr>
               </thead>

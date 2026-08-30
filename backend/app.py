@@ -101,6 +101,20 @@ def create_player():
     db.session.commit()
     return jsonify(player.to_dict()), 201
 
+@app.route('/api/players/<int:player_id>', methods=['PUT'])
+def update_player(player_id):
+    player = Player.query.get_or_404(player_id)
+    data = request.json
+    if not data or not data.get('name') or not str(data.get('name')).strip():
+        return jsonify({'error': 'Name is required'}), 400
+    name = str(data['name']).strip()
+    existing = Player.query.filter(Player.name == name, Player.id != player_id).first()
+    if existing:
+        return jsonify({'error': 'Player already exists'}), 400
+    player.name = name
+    db.session.commit()
+    return jsonify(player.to_dict())
+
 @app.route('/api/players/<int:player_id>', methods=['DELETE'])
 def delete_player(player_id):
     player = Player.query.get_or_404(player_id)

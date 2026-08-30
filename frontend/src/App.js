@@ -16,12 +16,12 @@ function App() {
               <img src={logo} alt="Rliga" className="nav-logo-img" />
               <span>
                 Rliga
-                <small>Hobby League Stats</small>
+                <small>Hobby league stats</small>
               </span>
             </NavLink>
             <div className="nav-menu">
               <NavLink to="/" end className="nav-link">Dashboard</NavLink>
-              <NavLink to="/match/new" className="nav-link">New Match</NavLink>
+              <NavLink to="/match/new" className="nav-link">New match</NavLink>
               <NavLink to="/players" className="nav-link">Players</NavLink>
             </div>
           </div>
