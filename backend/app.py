@@ -42,6 +42,12 @@ def init_db():
             if 'funny_fact' not in columns:
                 db.session.execute(text('ALTER TABLE matches ADD COLUMN funny_fact VARCHAR(500)'))
                 db.session.commit()
+            if 'not_played' not in columns:
+                if db.engine.dialect.name == 'sqlite':
+                    db.session.execute(text('ALTER TABLE matches ADD COLUMN not_played BOOLEAN DEFAULT 0'))
+                else:
+                    db.session.execute(text('ALTER TABLE matches ADD COLUMN not_played BOOLEAN DEFAULT FALSE'))
+                db.session.commit()
         
         # Create default teams if they don't exist
         if Team.query.count() == 0:
@@ -188,16 +194,23 @@ def get_matches():
 def create_match():
     data = request.json
     
-    # Validate required fields
-    required_fields = ['date', 'team1_id', 'team2_id', 'players']
-    if not all(field in data for field in required_fields):
+    required_fields = ['date', 'team1_id', 'team2_id']
+    if not data or not all(field in data for field in required_fields):
         return jsonify({'error': 'Missing required fields'}), 400
+
+    not_played = bool(data.get('not_played'))
+    players = [] if not_played else (data.get('players') or [])
+    if not not_played and not players:
+        return jsonify({'error': 'Players are required unless the match was not played'}), 400
     
     match_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
     season = season_for_date(match_date)
-    team1_score, team2_score, winner_id = scores_and_winner(
-        data['players'], data['team1_id'], data['team2_id']
-    )
+    if not_played:
+        team1_score, team2_score, winner_id = 0, 0, None
+    else:
+        team1_score, team2_score, winner_id = scores_and_winner(
+            players, data['team1_id'], data['team2_id']
+        )
 
     match = Match(
         date=match_date,
@@ -207,11 +220,12 @@ def create_match():
         team2_score=team2_score,
         winner_id=winner_id,
         season_id=season.id,
-        funny_fact=(data.get('funny_fact') or '').strip() or None
+        funny_fact=(data.get('funny_fact') or '').strip() or None,
+        not_played=not_played
     )
     db.session.add(match)
     db.session.flush()
-    replace_match_players(match.id, data['players'])
+    replace_match_players(match.id, players)
     db.session.commit()
     return jsonify(match.to_dict()), 201
 
@@ -224,15 +238,23 @@ def get_match(match_id):
 def update_match(match_id):
     match = Match.query.get_or_404(match_id)
     data = request.json
-    required_fields = ['date', 'team1_id', 'team2_id', 'players']
+    required_fields = ['date', 'team1_id', 'team2_id']
     if not data or not all(field in data for field in required_fields):
         return jsonify({'error': 'Missing required fields'}), 400
 
+    not_played = bool(data.get('not_played'))
+    players = [] if not_played else (data.get('players') or [])
+    if not not_played and not players:
+        return jsonify({'error': 'Players are required unless the match was not played'}), 400
+
     match_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
     season = season_for_date(match_date)
-    team1_score, team2_score, winner_id = scores_and_winner(
-        data['players'], data['team1_id'], data['team2_id']
-    )
+    if not_played:
+        team1_score, team2_score, winner_id = 0, 0, None
+    else:
+        team1_score, team2_score, winner_id = scores_and_winner(
+            players, data['team1_id'], data['team2_id']
+        )
 
     match.date = match_date
     match.team1_id = data['team1_id']
@@ -242,7 +264,8 @@ def update_match(match_id):
     match.winner_id = winner_id
     match.season_id = season.id
     match.funny_fact = (data.get('funny_fact') or '').strip() or None
-    replace_match_players(match.id, data['players'])
+    match.not_played = not_played
+    replace_match_players(match.id, players)
     db.session.commit()
     return jsonify(match.to_dict())
 
@@ -271,12 +294,14 @@ def get_team_stats():
             matches_query = matches_query.filter_by(season_id=season_id)
         
         matches = matches_query.all()
+        played = [m for m in matches if not m.not_played]
+        not_played_matches = [m for m in matches if m.not_played]
         
         wins = 0
         draws = 0
         losses = 0
         
-        for match in matches:
+        for match in played:
             if match.winner_id == team.id:
                 wins += 1
             elif match.winner_id is None:
@@ -289,7 +314,8 @@ def get_team_stats():
             'wins': wins,
             'draws': draws,
             'losses': losses,
-            'total_matches': len(matches)
+            'total_matches': len(played),
+            'matches_not_played': len(not_played_matches)
         })
     
     return jsonify(stats)
@@ -305,10 +331,12 @@ def get_player_stats():
         # Get match stats for this player
         match_players_query = MatchPlayer.query.options(
             joinedload(MatchPlayer.team)
-        ).filter_by(player_id=player.id)
+        ).filter_by(player_id=player.id).join(Match).filter(
+            (Match.not_played.is_(False)) | (Match.not_played.is_(None))
+        )
         
         if season_id:
-            match_players_query = match_players_query.join(Match).filter(
+            match_players_query = match_players_query.filter(
                 Match.season_id == season_id
             )
         

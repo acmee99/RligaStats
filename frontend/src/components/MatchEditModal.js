@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { updateMatch } from '../services/api';
+import DatePicker from './DatePicker';
 
 const MatchEditModal = ({ match, teams, players, onClose, onSaved }) => {
   const [matchDate, setMatchDate] = useState(match.date);
   const [team1Id, setTeam1Id] = useState(match.team1?.id);
   const [team2Id, setTeam2Id] = useState(match.team2?.id);
+  const [notPlayed, setNotPlayed] = useState(!!match.not_played);
   const [rows, setRows] = useState(
     (match.player_stats || []).map((ps) => ({
       player_id: ps.player?.id,
@@ -57,7 +59,7 @@ const MatchEditModal = ({ match, teams, players, onClose, onSaved }) => {
       setError('Teams must be different');
       return;
     }
-    if (rows.length === 0) {
+    if (!notPlayed && rows.length === 0) {
       setError('Add at least one player');
       return;
     }
@@ -70,12 +72,15 @@ const MatchEditModal = ({ match, teams, players, onClose, onSaved }) => {
         team1_id: team1Id,
         team2_id: team2Id,
         funny_fact: funnyFact.trim(),
-        players: rows.map((row) => ({
-          player_id: row.player_id,
-          team_id: row.team_id,
-          goals: parseInt(row.goals, 10) || 0,
-          assists: parseInt(row.assists, 10) || 0,
-        })),
+        not_played: notPlayed,
+        players: notPlayed
+          ? []
+          : rows.map((row) => ({
+              player_id: row.player_id,
+              team_id: row.team_id,
+              goals: parseInt(row.goals, 10) || 0,
+              assists: parseInt(row.assists, 10) || 0,
+            })),
       });
       onSaved();
     } catch (err) {
@@ -93,11 +98,24 @@ const MatchEditModal = ({ match, teams, players, onClose, onSaved }) => {
 
         <div className="form-group">
           <label>Date</label>
-          <input
-            type="date"
-            value={matchDate}
-            onChange={(e) => setMatchDate(e.target.value)}
-          />
+          <DatePicker value={matchDate} onChange={setMatchDate} />
+        </div>
+
+        <div className="form-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={notPlayed}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setNotPlayed(checked);
+                if (checked) {
+                  setRows([]);
+                }
+              }}
+            />
+            Match not played
+          </label>
         </div>
 
         <div className="team-selector">
@@ -121,82 +139,90 @@ const MatchEditModal = ({ match, teams, players, onClose, onSaved }) => {
           />
         </div>
 
-        <div className="form-group" style={{ marginTop: '1rem' }}>
-          <label>Add player</label>
-          <select
-            value=""
-            onChange={(e) => {
-              if (e.target.value) {
-                handleAddPlayer(e.target.value);
-                e.target.value = '';
-              }
-            }}
-          >
-            <option value="">-- Select player --</option>
-            {availablePlayers.map((player) => (
-              <option key={player.id} value={player.id}>{player.name}</option>
-            ))}
-          </select>
-        </div>
+        {notPlayed ? (
+          <p style={{ color: '#666', marginBottom: '1rem' }}>
+            Players cannot be selected for a match that was not played.
+          </p>
+        ) : (
+          <>
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label>Add player</label>
+              <select
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleAddPlayer(e.target.value);
+                    e.target.value = '';
+                  }
+                }}
+              >
+                <option value="">-- Select player --</option>
+                {availablePlayers.map((player) => (
+                  <option key={player.id} value={player.id}>{player.name}</option>
+                ))}
+              </select>
+            </div>
 
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Team</th>
-              <th>Goals</th>
-              <th>Assists</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.player_id}>
-                <td>{row.name}</td>
-                <td>
-                  <select
-                    value={row.team_id || ''}
-                    onChange={(e) =>
-                      handleRowChange(row.player_id, 'team_id', parseInt(e.target.value, 10))
-                    }
-                  >
-                    {teams.map((team) => (
-                      <option key={team.id} value={team.id}>{team.name}</option>
-                    ))}
-                  </select>
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    min="0"
-                    value={row.goals}
-                    onChange={(e) => handleRowChange(row.player_id, 'goals', e.target.value)}
-                    style={{ width: '70px' }}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    min="0"
-                    value={row.assists}
-                    onChange={(e) => handleRowChange(row.player_id, 'assists', e.target.value)}
-                    style={{ width: '70px' }}
-                  />
-                </td>
-                <td>
-                  <button
-                    className="btn btn-danger"
-                    type="button"
-                    onClick={() => handleRemovePlayer(row.player_id)}
-                    style={{ padding: '0.4rem 0.75rem' }}
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Team</th>
+                  <th>Goals</th>
+                  <th>Assists</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.player_id}>
+                    <td>{row.name}</td>
+                    <td>
+                      <select
+                        value={row.team_id || ''}
+                        onChange={(e) =>
+                          handleRowChange(row.player_id, 'team_id', parseInt(e.target.value, 10))
+                        }
+                      >
+                        {teams.map((team) => (
+                          <option key={team.id} value={team.id}>{team.name}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        value={row.goals}
+                        onChange={(e) => handleRowChange(row.player_id, 'goals', e.target.value)}
+                        style={{ width: '70px' }}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        value={row.assists}
+                        onChange={(e) => handleRowChange(row.player_id, 'assists', e.target.value)}
+                        style={{ width: '70px' }}
+                      />
+                    </td>
+                    <td>
+                      <button
+                        className="btn btn-danger"
+                        type="button"
+                        onClick={() => handleRemovePlayer(row.player_id)}
+                        style={{ padding: '0.4rem 0.75rem' }}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
 
         <div className="modal-actions">
           <button className="btn btn-secondary" type="button" onClick={onClose} disabled={loading}>

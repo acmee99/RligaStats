@@ -104,6 +104,9 @@ const Dashboard = () => {
 
   const sortMark = (key) => (sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '');
 
+  const teamPlayersForMatch = (match, teamId) =>
+    (match.player_stats || []).filter((ps) => ps.team?.id === teamId);
+
   const handleDeleteMatch = async (match) => {
     const label = `${match.date} — ${match.team1?.name || 'Team 1'} ${match.team1_score}–${match.team2_score} ${match.team2?.name || 'Team 2'}`;
     if (!window.confirm(`Delete this match?\n\n${label}`)) {
@@ -166,6 +169,9 @@ const Dashboard = () => {
                   <div style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
                     Total matches: {stat.total_matches}
                   </div>
+                  <div style={{ marginTop: '0.35rem', fontSize: '0.9rem' }}>
+                    Games not played: {stat.matches_not_played ?? 0}
+                  </div>
                 </div>
               ))}
             </div>
@@ -189,9 +195,22 @@ const Dashboard = () => {
                   {matches.map((match) => (
                     <tr key={match.id}>
                       <td>{match.date}</td>
-                      <td>{match.team1?.name}</td>
-                      <td>{match.team1_score} – {match.team2_score}</td>
-                      <td>{match.team2?.name}</td>
+                      <td>
+                        <MatchTeamHover
+                          teamName={match.team1?.name}
+                          notPlayed={match.not_played}
+                          players={teamPlayersForMatch(match, match.team1?.id)}
+                        />
+                      </td>
+                      <td>{match.not_played ? 'Not played' : `${match.team1_score} – ${match.team2_score}`}</td>
+                      <td>
+                        <MatchTeamHover
+                          align="right"
+                          teamName={match.team2?.name}
+                          notPlayed={match.not_played}
+                          players={teamPlayersForMatch(match, match.team2?.id)}
+                        />
+                      </td>
                       <td className="funny-fact-cell">{match.funny_fact || '—'}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -224,28 +243,28 @@ const Dashboard = () => {
               <thead>
                 <tr>
                   <th className="sortable" onClick={() => handleSort('player')}>Player{sortMark('player')}</th>
+                  <th className="sortable" onClick={() => handleSort('ranking')}>Ranking{sortMark('ranking')}</th>
+                  <th className="sortable" onClick={() => handleSort('points')}>Points{sortMark('points')}</th>
                   <th className="sortable" onClick={() => handleSort('total_goals')}>Goals{sortMark('total_goals')}</th>
                   <th className="sortable" onClick={() => handleSort('total_assists')}>Assists{sortMark('total_assists')}</th>
                   <th className="sortable" onClick={() => handleSort('matches_played')}>Matches played{sortMark('matches_played')}</th>
                   <th className="sortable" onClick={() => handleSort('matches_black')}>Black team{sortMark('matches_black')}</th>
                   <th className="sortable" onClick={() => handleSort('matches_white')}>White team{sortMark('matches_white')}</th>
-                  <th className="sortable" onClick={() => handleSort('points')}>Points{sortMark('points')}</th>
                   <th className="sortable" onClick={() => handleSort('ppm')}>Ppm{sortMark('ppm')}</th>
-                  <th className="sortable" onClick={() => handleSort('ranking')}>Ranking{sortMark('ranking')}</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedPlayerStats.map(stat => (
                   <tr key={stat.player.id}>
                     <td>{stat.player.name}</td>
+                    <td>{stat.ranking}</td>
+                    <td>{stat.points}</td>
                     <td>{stat.total_goals}</td>
                     <td>{stat.total_assists}</td>
                     <td>{stat.matches_played}</td>
                     <td>{stat.matches_black ?? 0}</td>
                     <td>{stat.matches_white ?? 0}</td>
-                    <td>{stat.points}</td>
                     <td>{Number(stat.ppm).toFixed(2)}</td>
-                    <td>{stat.ranking}</td>
                   </tr>
                 ))}
               </tbody>
@@ -273,3 +292,38 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+const MatchTeamHover = ({ teamName, players, notPlayed, align }) => (
+  <span className={`match-team-hover${align === 'right' ? ' align-right' : ''}`} tabIndex={0}>
+    {teamName}
+    <span className="match-team-popover" role="tooltip">
+      <span className="match-team-popover-inner">
+        <strong>{teamName}</strong>
+        {notPlayed ? (
+          <p>Match not played</p>
+        ) : players.length === 0 ? (
+          <p>No player stats</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Goals</th>
+                <th>Assists</th>
+              </tr>
+            </thead>
+            <tbody>
+              {players.map((ps) => (
+                <tr key={ps.id || ps.player?.id}>
+                  <td>{ps.player?.name || '—'}</td>
+                  <td>{ps.goals}</td>
+                  <td>{ps.assists}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </span>
+    </span>
+  </span>
+);

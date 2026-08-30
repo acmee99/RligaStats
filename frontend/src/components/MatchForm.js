@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getPlayers, getTeams, getCurrentSeason, createMatch } from '../services/api';
 import { format } from 'date-fns';
+import DatePicker from './DatePicker';
 
 const MatchForm = () => {
   const [players, setPlayers] = useState([]);
@@ -15,6 +16,7 @@ const MatchForm = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [funnyFact, setFunnyFact] = useState('');
+  const [notPlayed, setNotPlayed] = useState(false);
 
   useEffect(() => {
     loadInitialData();
@@ -90,7 +92,7 @@ const MatchForm = () => {
       return;
     }
 
-    if (team1Players.length === 0 || team2Players.length === 0) {
+    if (!notPlayed && (team1Players.length === 0 || team2Players.length === 0)) {
       setError('Each team must have at least one player');
       return;
     }
@@ -98,7 +100,7 @@ const MatchForm = () => {
     setLoading(true);
     setError(null);
     try {
-      const allPlayers = [
+      const allPlayers = notPlayed ? [] : [
         ...team1Players.map(p => ({
           player_id: p.player_id,
           team_id: selectedTeam1,
@@ -119,13 +121,14 @@ const MatchForm = () => {
         team2_id: selectedTeam2,
         players: allPlayers,
         funny_fact: funnyFact.trim(),
+        not_played: notPlayed,
       });
 
       setSuccess('Match created successfully!');
-      // Reset form
       setTeam1Players([]);
       setTeam2Players([]);
       setFunnyFact('');
+      setNotPlayed(false);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create match');
@@ -156,20 +159,35 @@ const MatchForm = () => {
         {success && <div className="success">{success}</div>}
 
         <div className="form-group">
-          <label>Match Date</label>
-          <input
-            type="date"
-            value={matchDate}
-            onChange={(e) => setMatchDate(e.target.value)}
-          />
+          <label>Match date</label>
+          <DatePicker value={matchDate} onChange={setMatchDate} />
+        </div>
+
+        <div className="form-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={notPlayed}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setNotPlayed(checked);
+                if (checked) {
+                  setTeam1Players([]);
+                  setTeam2Players([]);
+                }
+              }}
+            />
+            Match not played
+          </label>
         </div>
 
         <div className="team-selector">
           <div className="team-box team-black">
             <h3>{teams.find(t => t.id === selectedTeam1)?.name || 'Team 1-Black'}</h3>
             
+            {!notPlayed && (
             <div style={{ marginTop: '1rem' }}>
-              <label>Add Player:</label>
+              <label>Add player:</label>
               <select
                 onChange={(e) => {
                   if (e.target.value) {
@@ -179,7 +197,7 @@ const MatchForm = () => {
                 }}
                 style={{ width: '100%', marginTop: '0.5rem' }}
               >
-                <option value="">-- Select Player --</option>
+                <option value="">-- Select player --</option>
                 {getAvailablePlayers(1).map(player => (
                   <option key={player.id} value={player.id}>
                     {player.name}
@@ -187,6 +205,8 @@ const MatchForm = () => {
                 ))}
               </select>
             </div>
+            )}
+            {notPlayed && <p style={{ marginTop: '1rem', color: '#666' }}>Players cannot be selected for a match that was not played.</p>}
 
             <ul className="player-list" style={{ marginTop: '1rem' }}>
               {team1Players.map(player => (
@@ -227,8 +247,9 @@ const MatchForm = () => {
           <div className="team-box team-white">
             <h3>{teams.find(t => t.id === selectedTeam2)?.name || 'Team 2-White'}</h3>
             
+            {!notPlayed && (
             <div style={{ marginTop: '1rem' }}>
-              <label>Add Player:</label>
+              <label>Add player:</label>
               <select
                 onChange={(e) => {
                   if (e.target.value) {
@@ -238,7 +259,7 @@ const MatchForm = () => {
                 }}
                 style={{ width: '100%', marginTop: '0.5rem' }}
               >
-                <option value="">-- Select Player --</option>
+                <option value="">-- Select player --</option>
                 {getAvailablePlayers(2).map(player => (
                   <option key={player.id} value={player.id}>
                     {player.name}
@@ -246,6 +267,8 @@ const MatchForm = () => {
                 ))}
               </select>
             </div>
+            )}
+            {notPlayed && <p style={{ marginTop: '1rem', color: '#666' }}>Players cannot be selected for a match that was not played.</p>}
 
             <ul className="player-list" style={{ marginTop: '1rem' }}>
               {team2Players.map(player => (
@@ -300,7 +323,7 @@ const MatchForm = () => {
         <button
           className="btn btn-primary"
           onClick={handleSubmit}
-          disabled={loading || team1Players.length === 0 || team2Players.length === 0}
+          disabled={loading || (!notPlayed && (team1Players.length === 0 || team2Players.length === 0))}
           style={{ marginTop: '2rem', width: '100%' }}
         >
           {loading ? 'Creating Match...' : 'Create Match'}

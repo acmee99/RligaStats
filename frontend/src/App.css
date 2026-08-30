@@ -341,6 +341,77 @@ input[type="text"] {
   background: #fff5f8;
 }
 
+.match-team-hover {
+  position: relative;
+  display: inline-block;
+  cursor: default;
+  border-bottom: 1px dotted var(--pl-purple);
+  text-transform: none;
+}
+
+.match-team-popover {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 40;
+  min-width: 220px;
+  padding-top: 0.4rem;
+}
+
+.match-team-hover.align-right .match-team-popover {
+  left: auto;
+  right: 0;
+}
+
+.match-team-hover:hover .match-team-popover,
+.match-team-hover:focus-within .match-team-popover {
+  display: block;
+}
+
+.match-team-popover-inner {
+  background: #fff;
+  color: #1a1a1a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  border: 1px solid #e4dce8;
+  border-radius: 4px;
+  padding: 0.55rem 0.65rem 0.65rem;
+  text-transform: none;
+}
+
+.match-team-popover-inner strong {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--pl-purple);
+}
+
+.match-team-popover-inner p {
+  margin: 0;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.match-team-popover-inner table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0;
+}
+
+.match-team-popover-inner th,
+.match-team-popover-inner td {
+  padding: 0.3rem 0.4rem;
+  font-size: 0.8rem;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid #f0eef2;
+}
+
+.match-team-popover-inner th {
+  background: #f7f4f8;
+  font-size: 0.7rem;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -564,6 +635,95 @@ input[type="text"] {
 
 .site-footer p {
   padding: 1rem;
+}
+
+.checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  text-transform: none !important;
+  font-size: 1rem !important;
+  letter-spacing: 0.02em !important;
+  font-weight: 700;
+}
+
+.checkbox-label input {
+  width: auto;
+  accent-color: var(--pl-magenta);
+}
+
+.date-picker {
+  max-width: 22rem;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  padding: 0.75rem;
+  background: #fff;
+}
+
+.date-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.date-picker-header .btn {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.75rem;
+}
+
+.date-picker-weekdays,
+.date-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.date-picker-weekdays span {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #666;
+}
+
+.date-picker-weekdays .weekday-wed,
+.date-picker-day.wednesday {
+  background: #fff3b0;
+  color: #5a4300;
+  font-weight: 800;
+}
+
+.date-picker-day {
+  border: none;
+  background: #f7f7f8;
+  border-radius: 4px;
+  padding: 0.45rem 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+}
+
+.date-picker-day.outside-month {
+  opacity: 0.35;
+}
+
+.date-picker-day.selected {
+  background: var(--pl-magenta);
+  color: #fff;
+}
+
+.date-picker-day.wednesday.selected {
+  background: var(--pl-purple);
+  color: #fff;
+}
+
+.date-picker-hint {
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 500;
 }
 
 @media (max-width: 700px) {
