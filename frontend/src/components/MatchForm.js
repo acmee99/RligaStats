@@ -14,6 +14,7 @@ const MatchForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [funnyFact, setFunnyFact] = useState('');
 
   useEffect(() => {
     loadInitialData();
@@ -116,13 +117,15 @@ const MatchForm = () => {
         date: matchDate,
         team1_id: selectedTeam1,
         team2_id: selectedTeam2,
-        players: allPlayers
+        players: allPlayers,
+        funny_fact: funnyFact.trim(),
       });
 
       setSuccess('Match created successfully!');
       // Reset form
       setTeam1Players([]);
       setTeam2Players([]);
+      setFunnyFact('');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create match');
@@ -222,17 +225,7 @@ const MatchForm = () => {
           </div>
 
           <div className="team-box team-white">
-            <h3>{teams.find(t => t.id === selectedTeam2)?.name || 'Team 2'}</h3>
-            <select
-              value={selectedTeam2 || ''}
-              onChange={(e) => setSelectedTeam2(parseInt(e.target.value))}
-            >
-              {teams
-                .filter((team) => team.id !== selectedTeam1)
-                .map(team => (
-                <option key={team.id} value={team.id}>{team.name}</option>
-              ))}
-            </select>
+            <h3>{teams.find(t => t.id === selectedTeam2)?.name || 'Team 2-White'}</h3>
             
             <div style={{ marginTop: '1rem' }}>
               <label>Add Player:</label>
@@ -289,6 +282,19 @@ const MatchForm = () => {
               ))}
             </ul>
           </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="funny-fact">Funny fact</label>
+          <textarea
+            id="funny-fact"
+            className="text-normal"
+            maxLength={500}
+            rows={3}
+            value={funnyFact}
+            onChange={(e) => setFunnyFact(e.target.value)}
+            placeholder="Short note about this match"
+          />
         </div>
 
         <button

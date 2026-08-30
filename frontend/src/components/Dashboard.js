@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getTeamStats, getPlayerStats, getSeasons, getCurrentSeason, getMatches, getPlayers, getTeams, deleteMatch } from '../services/api';
 import MatchEditModal from './MatchEditModal';
 
@@ -13,6 +13,8 @@ const Dashboard = () => {
   const [editingMatch, setEditingMatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortKey, setSortKey] = useState('ranking');
+  const [sortDir, setSortDir] = useState('asc');
 
   useEffect(() => {
     loadSeasons();
@@ -60,6 +62,47 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+
+  const sortedPlayerStats = useMemo(() => {
+    const rows = playerStats.map((stat) => {
+      const points = stat.points ?? ((stat.total_goals || 0) + (stat.total_assists || 0));
+      const matchesPlayed = stat.matches_played || 0;
+      const ppm = stat.ppm ?? (matchesPlayed ? points / matchesPlayed : 0);
+      return {
+        ...stat,
+        points,
+        ppm: Number(ppm),
+        ranking: stat.ranking ?? 0,
+        matches_black: stat.matches_black ?? 0,
+        matches_white: stat.matches_white ?? 0,
+      };
+    });
+    return [...rows].sort((a, b) => {
+      let av;
+      let bv;
+      if (sortKey === 'player') {
+        av = (a.player?.name || '').toLowerCase();
+        bv = (b.player?.name || '').toLowerCase();
+      } else {
+        av = a[sortKey];
+        bv = b[sortKey];
+      }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [playerStats, sortKey, sortDir]);
+
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((dir) => (dir === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'player' || key === 'ranking' ? 'asc' : 'desc');
+    }
+  };
+
+  const sortMark = (key) => (sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '');
 
   const handleDeleteMatch = async (match) => {
     const label = `${match.date} — ${match.team1?.name || 'Team 1'} ${match.team1_score}–${match.team2_score} ${match.team2?.name || 'Team 2'}`;
@@ -138,6 +181,7 @@ const Dashboard = () => {
                     <th>Team 1</th>
                     <th>Score</th>
                     <th>Team 2</th>
+                    <th>Funny fact</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -148,6 +192,7 @@ const Dashboard = () => {
                       <td>{match.team1?.name}</td>
                       <td>{match.team1_score} – {match.team2_score}</td>
                       <td>{match.team2?.name}</td>
+                      <td className="funny-fact-cell">{match.funny_fact || '—'}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                           <button
@@ -178,16 +223,19 @@ const Dashboard = () => {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Player</th>
-                  <th>Goals</th>
-                  <th>Assists</th>
-                  <th>Matches Played</th>
-                  <th>Black team</th>
-                  <th>White team</th>
+                  <th className="sortable" onClick={() => handleSort('player')}>Player{sortMark('player')}</th>
+                  <th className="sortable" onClick={() => handleSort('total_goals')}>Goals{sortMark('total_goals')}</th>
+                  <th className="sortable" onClick={() => handleSort('total_assists')}>Assists{sortMark('total_assists')}</th>
+                  <th className="sortable" onClick={() => handleSort('matches_played')}>Matches Played{sortMark('matches_played')}</th>
+                  <th className="sortable" onClick={() => handleSort('matches_black')}>Black team{sortMark('matches_black')}</th>
+                  <th className="sortable" onClick={() => handleSort('matches_white')}>White team{sortMark('matches_white')}</th>
+                  <th className="sortable" onClick={() => handleSort('points')}>Points{sortMark('points')}</th>
+                  <th className="sortable" onClick={() => handleSort('ppm')}>PPM{sortMark('ppm')}</th>
+                  <th className="sortable" onClick={() => handleSort('ranking')}>Ranking{sortMark('ranking')}</th>
                 </tr>
               </thead>
               <tbody>
-                {playerStats.map(stat => (
+                {sortedPlayerStats.map(stat => (
                   <tr key={stat.player.id}>
                     <td>{stat.player.name}</td>
                     <td>{stat.total_goals}</td>
@@ -195,6 +243,9 @@ const Dashboard = () => {
                     <td>{stat.matches_played}</td>
                     <td>{stat.matches_black ?? 0}</td>
                     <td>{stat.matches_white ?? 0}</td>
+                    <td>{stat.points}</td>
+                    <td>{Number(stat.ppm).toFixed(2)}</td>
+                    <td>{stat.ranking}</td>
                   </tr>
                 ))}
               </tbody>

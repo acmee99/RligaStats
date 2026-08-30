@@ -14,6 +14,7 @@ const MatchEditModal = ({ match, teams, players, onClose, onSaved }) => {
       assists: ps.assists || 0,
     }))
   );
+  const [funnyFact, setFunnyFact] = useState(match.funny_fact || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -68,6 +69,7 @@ const MatchEditModal = ({ match, teams, players, onClose, onSaved }) => {
         date: matchDate,
         team1_id: team1Id,
         team2_id: team2Id,
+        funny_fact: funnyFact.trim(),
         players: rows.map((row) => ({
           player_id: row.player_id,
           team_id: row.team_id,
@@ -100,27 +102,23 @@ const MatchEditModal = ({ match, teams, players, onClose, onSaved }) => {
 
         <div className="team-selector">
           <div className="team-box team-black">
-            <h3>Team 1</h3>
-            <select
-              value={team1Id || ''}
-              onChange={(e) => setTeam1Id(parseInt(e.target.value, 10))}
-            >
-              {teams.map((team) => (
-                <option key={team.id} value={team.id}>{team.name}</option>
-              ))}
-            </select>
+            <h3>{teams.find((t) => t.id === team1Id)?.name || 'Team 1-Black'}</h3>
           </div>
           <div className="team-box team-white">
-            <h3>Team 2</h3>
-            <select
-              value={team2Id || ''}
-              onChange={(e) => setTeam2Id(parseInt(e.target.value, 10))}
-            >
-              {teams.map((team) => (
-                <option key={team.id} value={team.id}>{team.name}</option>
-              ))}
-            </select>
+            <h3>{teams.find((t) => t.id === team2Id)?.name || 'Team 2-White'}</h3>
           </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="edit-funny-fact">Funny fact</label>
+          <textarea
+            id="edit-funny-fact"
+            className="text-normal"
+            maxLength={500}
+            rows={3}
+            value={funnyFact}
+            onChange={(e) => setFunnyFact(e.target.value)}
+          />
         </div>
 
         <div className="form-group" style={{ marginTop: '1rem' }}>

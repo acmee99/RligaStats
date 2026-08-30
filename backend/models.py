@@ -82,6 +82,7 @@ class Match(db.Model):
     team2_score = db.Column(db.Integer, default=0)
     winner_id = db.Column(db.Integer, db.ForeignKey('teams.id'), nullable=True)
     season_id = db.Column(db.Integer, db.ForeignKey('seasons.id'), nullable=False)
+    funny_fact = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -101,6 +102,7 @@ class Match(db.Model):
             'team2_score': self.team2_score,
             'winner': self.winner.to_dict() if self.winner else None,
             'season': self.season.to_dict() if self.season else None,
+            'funny_fact': self.funny_fact or '',
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'player_stats': [ps.to_dict() for ps in self.player_stats]
         }

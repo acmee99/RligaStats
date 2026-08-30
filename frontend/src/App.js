@@ -5,7 +5,6 @@ import logo from './assets/rliga-logo.png';
 import Dashboard from './components/Dashboard';
 import MatchForm from './components/MatchForm';
 import PlayerManagement from './components/PlayerManagement';
-import ImageUpload from './components/ImageUpload';
 
 function App() {
   return (
@@ -23,7 +22,6 @@ function App() {
             <div className="nav-menu">
               <NavLink to="/" end className="nav-link">Dashboard</NavLink>
               <NavLink to="/match/new" className="nav-link">New Match</NavLink>
-              <NavLink to="/match/image" className="nav-link">Upload Image</NavLink>
               <NavLink to="/players" className="nav-link">Players</NavLink>
             </div>
           </div>
@@ -33,7 +31,6 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/match/new" element={<MatchForm />} />
-            <Route path="/match/image" element={<ImageUpload />} />
             <Route path="/players" element={<PlayerManagement />} />
           </Routes>
         </main>

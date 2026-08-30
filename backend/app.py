@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 import os
 from datetime import datetime, date
 from sqlalchemy.orm import joinedload
+from sqlalchemy import inspect, text
 from models import db, Player, Team, Match, MatchPlayer, Season
 from config import Config
 from image_processor import process_match_image
@@ -35,6 +36,12 @@ def init_db():
     """Initialize database and create default teams"""
     with app.app_context():
         db.create_all()
+        inspector = inspect(db.engine)
+        if 'matches' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('matches')]
+            if 'funny_fact' not in columns:
+                db.session.execute(text('ALTER TABLE matches ADD COLUMN funny_fact VARCHAR(500)'))
+                db.session.commit()
         
         # Create default teams if they don't exist
         if Team.query.count() == 0:
@@ -185,7 +192,8 @@ def create_match():
         team1_score=team1_score,
         team2_score=team2_score,
         winner_id=winner_id,
-        season_id=season.id
+        season_id=season.id,
+        funny_fact=(data.get('funny_fact') or '').strip() or None
     )
     db.session.add(match)
     db.session.flush()
@@ -219,6 +227,7 @@ def update_match(match_id):
     match.team2_score = team2_score
     match.winner_id = winner_id
     match.season_id = season.id
+    match.funny_fact = (data.get('funny_fact') or '').strip() or None
     replace_match_players(match.id, data['players'])
     db.session.commit()
     return jsonify(match.to_dict())
@@ -310,10 +319,18 @@ def get_player_stats():
             'matches_played': matches_played,
             'matches_black': matches_black,
             'matches_white': matches_white,
+            'points': total_goals + total_assists,
+            'ppm': round((total_goals + total_assists) / matches_played, 2) if matches_played else 0,
         })
     
-    # Sort by total goals descending
-    stats.sort(key=lambda x: x['total_goals'], reverse=True)
+    stats.sort(key=lambda x: (-x['points'], x['player']['name'].lower()))
+    last_points = None
+    last_rank = 0
+    for index, row in enumerate(stats, start=1):
+        if row['points'] != last_points:
+            last_rank = index
+            last_points = row['points']
+        row['ranking'] = last_rank
     
     return jsonify(stats)
 
