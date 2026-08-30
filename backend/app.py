@@ -10,7 +10,16 @@ import json
 
 app = Flask(__name__)
 app.config.from_object(Config)
-CORS(app)
+CORS(
+    app,
+    origins=[
+        'https://rligastats-frontend.onrender.com',
+        'http://localhost:3000',
+    ],
+    supports_credentials=False,
+    allow_headers=['Content-Type'],
+    methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+)
 
 db.init_app(app)
 
@@ -72,6 +81,7 @@ def get_teams():
 # Season endpoints
 @app.route('/api/seasons', methods=['GET'])
 def get_seasons():
+    Season.get_or_create_season(Season.get_current_season())
     seasons = Season.query.order_by(Season.start_year.desc()).all()
     return jsonify([s.to_dict() for s in seasons])
 
@@ -265,6 +275,8 @@ def get_player_stats():
 @app.route('/')
 def index():
     return jsonify({'status': 'ok'})
+
+init_db()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

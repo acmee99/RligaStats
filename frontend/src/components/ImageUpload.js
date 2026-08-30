@@ -143,12 +143,12 @@ const ImageUpload = () => {
     extractedData.forEach((item, index) => {
       const playerId = playerMappings[index];
       if (playerId) {
-        // Simple assignment: alternate or based on some logic
-        // For now, assign first half to team1, second half to team2
-        if (index < extractedData.length / 2) {
-          team1Players.push({ player_id: playerId, team_id: selectedTeam1, ...item });
+        const teamId = teamAssignments[index] || selectedTeam1;
+        const row = { player_id: playerId, team_id: teamId, goals: item.goals || 0, assists: item.assists || 0 };
+        if (teamId === selectedTeam2) {
+          team2Players.push(row);
         } else {
-          team2Players.push({ player_id: playerId, team_id: selectedTeam2, ...item });
+          team1Players.push(row);
         }
       }
     });

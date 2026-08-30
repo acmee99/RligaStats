@@ -4,9 +4,6 @@ const API_BASE_URL = 'https://rligastats-backend.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Players
@@ -33,11 +30,7 @@ export const deleteMatch = (id) => api.delete(`/matches/${id}`);
 export const uploadImage = (imageFile) => {
   const formData = new FormData();
   formData.append('image', imageFile);
-  return api.post('/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  return api.post('/upload', formData);
 };
 
 // Statistics
