@@ -29,11 +29,11 @@ const MatchForm = () => {
       setPlayers(playersRes.data);
       setTeams(teamsRes.data);
       setCurrentSeason(seasonRes.data);
-      
-      if (teamsRes.data.length >= 2) {
-        setSelectedTeam1(teamsRes.data[0].id);
-        setSelectedTeam2(teamsRes.data[1].id);
-      }
+
+      const blackTeam = teamsRes.data.find((t) => (t.color || '').toLowerCase() === 'black');
+      const whiteTeam = teamsRes.data.find((t) => (t.color || '').toLowerCase() === 'white');
+      setSelectedTeam1(blackTeam?.id || teamsRes.data[0]?.id || null);
+      setSelectedTeam2(whiteTeam?.id || teamsRes.data[1]?.id || null);
     } catch (err) {
       setError('Failed to load initial data');
       console.error(err);
@@ -163,15 +163,7 @@ const MatchForm = () => {
 
         <div className="team-selector">
           <div className="team-box team-black">
-            <h3>{teams.find(t => t.id === selectedTeam1)?.name || 'Team 1'}</h3>
-            <select
-              value={selectedTeam1 || ''}
-              onChange={(e) => setSelectedTeam1(parseInt(e.target.value))}
-            >
-              {teams.map(team => (
-                <option key={team.id} value={team.id}>{team.name}</option>
-              ))}
-            </select>
+            <h3>{teams.find(t => t.id === selectedTeam1)?.name || 'Team 1-Black'}</h3>
             
             <div style={{ marginTop: '1rem' }}>
               <label>Add Player:</label>
@@ -235,7 +227,9 @@ const MatchForm = () => {
               value={selectedTeam2 || ''}
               onChange={(e) => setSelectedTeam2(parseInt(e.target.value))}
             >
-              {teams.map(team => (
+              {teams
+                .filter((team) => team.id !== selectedTeam1)
+                .map(team => (
                 <option key={team.id} value={team.id}>{team.name}</option>
               ))}
             </select>

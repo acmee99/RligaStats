@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getTeamStats, getPlayerStats, getSeasons, getCurrentSeason, getMatches, getPlayers, getTeams } from '../services/api';
+import { getTeamStats, getPlayerStats, getSeasons, getCurrentSeason, getMatches, getPlayers, getTeams, deleteMatch } from '../services/api';
 import MatchEditModal from './MatchEditModal';
 
 const Dashboard = () => {
@@ -58,6 +58,19 @@ const Dashboard = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteMatch = async (match) => {
+    const label = `${match.date} — ${match.team1?.name || 'Team 1'} ${match.team1_score}–${match.team2_score} ${match.team2?.name || 'Team 2'}`;
+    if (!window.confirm(`Delete this match?\n\n${label}`)) {
+      return;
+    }
+    try {
+      await deleteMatch(match.id);
+      loadStats();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to delete match');
     }
   };
 
@@ -136,14 +149,24 @@ const Dashboard = () => {
                       <td>{match.team1_score} – {match.team2_score}</td>
                       <td>{match.team2?.name}</td>
                       <td>
-                        <button
-                          className="btn btn-primary"
-                          type="button"
-                          onClick={() => setEditingMatch(match)}
-                          style={{ padding: '0.4rem 0.9rem' }}
-                        >
-                          Edit
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <button
+                            className="btn btn-primary"
+                            type="button"
+                            onClick={() => setEditingMatch(match)}
+                            style={{ padding: '0.4rem 0.9rem' }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="btn btn-danger"
+                            type="button"
+                            onClick={() => handleDeleteMatch(match)}
+                            style={{ padding: '0.4rem 0.9rem' }}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

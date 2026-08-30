@@ -357,7 +357,24 @@ body {
 
 .team-box.team-black {
   border-color: #111;
-  background: #f3f3f3;
+  background: #111;
+  color: #fff;
+}
+
+.team-box.team-black h3,
+.team-box.team-black label {
+  color: #fff;
+}
+
+.team-box.team-black select {
+  background: #222;
+  color: #fff;
+  border: 1px solid #555;
+}
+
+.team-box.team-black .player-item {
+  background: #2a2a2a;
+  color: #fff;
 }
 
 .team-box.team-white {
