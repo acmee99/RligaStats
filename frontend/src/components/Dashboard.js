@@ -205,7 +205,6 @@ const Dashboard = () => {
                       <td>{match.not_played ? 'Not played' : `${match.team1_score} – ${match.team2_score}`}</td>
                       <td>
                         <MatchTeamHover
-                          align="right"
                           teamName={match.team2?.name}
                           notPlayed={match.not_played}
                           players={teamPlayersForMatch(match, match.team2?.id)}
@@ -293,37 +292,51 @@ const Dashboard = () => {
 
 export default Dashboard;
 
-const MatchTeamHover = ({ teamName, players, notPlayed, align }) => (
-  <span className={`match-team-hover${align === 'right' ? ' align-right' : ''}`} tabIndex={0}>
-    {teamName}
-    <span className="match-team-popover" role="tooltip">
-      <span className="match-team-popover-inner">
-        <strong>{teamName}</strong>
-        {notPlayed ? (
-          <p>Match not played</p>
-        ) : players.length === 0 ? (
-          <p>No player stats</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Player</th>
-                <th>Goals</th>
-                <th>Assists</th>
-              </tr>
-            </thead>
-            <tbody>
-              {players.map((ps) => (
-                <tr key={ps.id || ps.player?.id}>
-                  <td>{ps.player?.name || '—'}</td>
-                  <td>{ps.goals}</td>
-                  <td>{ps.assists}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </span>
+const MatchTeamHover = ({ teamName, players, notPlayed }) => {
+  const [pos, setPos] = useState(null);
+
+  return (
+    <span
+      className="match-team-hover"
+      onMouseEnter={(e) => setPos({ x: e.clientX, y: e.clientY })}
+      onMouseMove={(e) => setPos({ x: e.clientX, y: e.clientY })}
+      onMouseLeave={() => setPos(null)}
+    >
+      {teamName}
+      {pos && (
+        <span
+          className="match-team-popover"
+          role="tooltip"
+          style={{ left: pos.x, top: pos.y }}
+        >
+          <span className="match-team-popover-inner">
+            {notPlayed ? (
+              <p>Match not played</p>
+            ) : players.length === 0 ? (
+              <p>No player stats</p>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Player</th>
+                    <th>Goals</th>
+                    <th>Assists</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {players.map((ps) => (
+                    <tr key={ps.id || ps.player?.id}>
+                      <td>{ps.player?.name || '—'}</td>
+                      <td>{ps.goals}</td>
+                      <td>{ps.assists}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </span>
+        </span>
+      )}
     </span>
-  </span>
-);
+  );
+};
