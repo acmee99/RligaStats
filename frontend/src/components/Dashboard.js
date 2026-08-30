@@ -67,11 +67,18 @@ const Dashboard = () => {
 
   return (
     <div>
+      <section className="hero">
+        <div className="hero-copy">
+          <p className="hero-kicker">Match Centre</p>
+          <h1>Black vs White</h1>
+          <p>Season stats, results and player numbers — inspired by a premier-league night under the lights.</p>
+        </div>
+      </section>
       <div className="card">
-        <h2>Football Match Statistics</h2>
+        <h2>League table &amp; stats</h2>
         
         <div className="season-selector">
-          <label htmlFor="season-select">Season: </label>
+          <label htmlFor="season-select">Season </label>
           <select
             id="season-select"
             value={selectedSeason || ''}

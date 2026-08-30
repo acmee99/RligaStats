@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
 import './App.css';
 import Dashboard from './components/Dashboard';
 import MatchForm from './components/MatchForm';
@@ -12,18 +12,22 @@ function App() {
       <div className="App">
         <nav className="navbar">
           <div className="nav-container">
-            <Link to="/" className="nav-logo">
-              ⚽ Football Stats
-            </Link>
+            <NavLink to="/" className="nav-logo">
+              <img src="/images/rliga-logo.png" alt="Rliga" className="nav-logo-img" />
+              <span>
+                Rliga
+                <small>Hobby League Stats</small>
+              </span>
+            </NavLink>
             <div className="nav-menu">
-              <Link to="/" className="nav-link">Dashboard</Link>
-              <Link to="/match/new" className="nav-link">New Match</Link>
-              <Link to="/match/image" className="nav-link">Upload Image</Link>
-              <Link to="/players" className="nav-link">Players</Link>
+              <NavLink to="/" end className="nav-link">Dashboard</NavLink>
+              <NavLink to="/match/new" className="nav-link">New Match</NavLink>
+              <NavLink to="/match/image" className="nav-link">Upload Image</NavLink>
+              <NavLink to="/players" className="nav-link">Players</NavLink>
             </div>
           </div>
         </nav>
-        
+
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -32,6 +36,11 @@ function App() {
             <Route path="/players" element={<PlayerManagement />} />
           </Routes>
         </main>
+
+        <footer className="site-footer">
+          <div className="footer-pitch" />
+          <p>Rliga Stats — Black vs White</p>
+        </footer>
       </div>
     </Router>
   );
