@@ -43,6 +43,34 @@ def init_db():
             db.session.add(team2)
             db.session.commit()
 
+def season_for_date(match_date):
+    if match_date.month >= 9:
+        season_year = match_date.year
+    else:
+        season_year = match_date.year - 1
+    return Season.get_or_create_season(season_year)
+
+def scores_and_winner(players, team1_id, team2_id):
+    team1_score = sum(p['goals'] for p in players if p['team_id'] == team1_id)
+    team2_score = sum(p['goals'] for p in players if p['team_id'] == team2_id)
+    winner_id = None
+    if team1_score > team2_score:
+        winner_id = team1_id
+    elif team2_score > team1_score:
+        winner_id = team2_id
+    return team1_score, team2_score, winner_id
+
+def replace_match_players(match_id, players):
+    MatchPlayer.query.filter_by(match_id=match_id).delete(synchronize_session=False)
+    for player_data in players:
+        db.session.add(MatchPlayer(
+            match_id=match_id,
+            player_id=player_data['player_id'],
+            team_id=player_data['team_id'],
+            goals=player_data.get('goals', 0),
+            assists=player_data.get('assists', 0)
+        ))
+
 # Player endpoints
 @app.route('/api/players', methods=['GET'])
 def get_players():
@@ -143,27 +171,12 @@ def create_match():
     if not all(field in data for field in required_fields):
         return jsonify({'error': 'Missing required fields'}), 400
     
-    # Get or create season
     match_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
-    if match_date.month >= 9:
-        season_year = match_date.year
-    else:
-        season_year = match_date.year - 1
-    
-    season = Season.get_or_create_season(season_year)
-    
-    # Calculate team scores
-    team1_score = sum(p['goals'] for p in data['players'] if p['team_id'] == data['team1_id'])
-    team2_score = sum(p['goals'] for p in data['players'] if p['team_id'] == data['team2_id'])
-    
-    # Determine winner
-    winner_id = None
-    if team1_score > team2_score:
-        winner_id = data['team1_id']
-    elif team2_score > team1_score:
-        winner_id = data['team2_id']
-    
-    # Create match
+    season = season_for_date(match_date)
+    team1_score, team2_score, winner_id = scores_and_winner(
+        data['players'], data['team1_id'], data['team2_id']
+    )
+
     match = Match(
         date=match_date,
         team1_id=data['team1_id'],
@@ -174,21 +187,40 @@ def create_match():
         season_id=season.id
     )
     db.session.add(match)
-    db.session.flush()  # Get match ID
-    
-    # Create player statistics
-    for player_data in data['players']:
-        match_player = MatchPlayer(
-            match_id=match.id,
-            player_id=player_data['player_id'],
-            team_id=player_data['team_id'],
-            goals=player_data.get('goals', 0),
-            assists=player_data.get('assists', 0)
-        )
-        db.session.add(match_player)
-    
+    db.session.flush()
+    replace_match_players(match.id, data['players'])
     db.session.commit()
     return jsonify(match.to_dict()), 201
+
+@app.route('/api/matches/<int:match_id>', methods=['GET'])
+def get_match(match_id):
+    match = Match.query.get_or_404(match_id)
+    return jsonify(match.to_dict())
+
+@app.route('/api/matches/<int:match_id>', methods=['PUT'])
+def update_match(match_id):
+    match = Match.query.get_or_404(match_id)
+    data = request.json
+    required_fields = ['date', 'team1_id', 'team2_id', 'players']
+    if not data or not all(field in data for field in required_fields):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    match_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+    season = season_for_date(match_date)
+    team1_score, team2_score, winner_id = scores_and_winner(
+        data['players'], data['team1_id'], data['team2_id']
+    )
+
+    match.date = match_date
+    match.team1_id = data['team1_id']
+    match.team2_id = data['team2_id']
+    match.team1_score = team1_score
+    match.team2_score = team2_score
+    match.winner_id = winner_id
+    match.season_id = season.id
+    replace_match_players(match.id, data['players'])
+    db.session.commit()
+    return jsonify(match.to_dict())
 
 @app.route('/api/matches/<int:match_id>', methods=['DELETE'])
 def delete_match(match_id):

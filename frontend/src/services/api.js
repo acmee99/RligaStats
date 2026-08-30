@@ -24,6 +24,7 @@ export const getMatches = (seasonId) => {
   return api.get('/matches', { params });
 };
 export const createMatch = (matchData) => api.post('/matches', matchData);
+export const updateMatch = (id, matchData) => api.put(`/matches/${id}`, matchData);
 export const deleteMatch = (id) => api.delete(`/matches/${id}`);
 
 // Image Upload
