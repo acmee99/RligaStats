@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
 import './App.css';
+import logo from './assets/rliga-logo.png';
 import Dashboard from './components/Dashboard';
 import MatchForm from './components/MatchForm';
 import PlayerManagement from './components/PlayerManagement';
@@ -13,7 +14,7 @@ function App() {
         <nav className="navbar">
           <div className="nav-container">
             <NavLink to="/" className="nav-logo">
-              <img src="/images/rliga-logo.png" alt="Rliga" className="nav-logo-img" />
+              <img src={logo} alt="Rliga" className="nav-logo-img" />
               <span>
                 Rliga
                 <small>Hobby League Stats</small>

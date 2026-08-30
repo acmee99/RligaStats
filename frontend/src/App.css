@@ -25,7 +25,7 @@ body {
   flex-direction: column;
   background:
     linear-gradient(180deg, rgba(55, 0, 60, 0.88) 0%, rgba(55, 0, 60, 0.95) 55%, #37003c 100%),
-    url('/images/hero-pitch.png') center top / cover no-repeat fixed;
+    url('./assets/hero-pitch.png') center top / cover no-repeat fixed;
 }
 
 .navbar {
@@ -104,7 +104,7 @@ body {
   border-radius: 0;
   background:
     linear-gradient(90deg, rgba(55, 0, 60, 0.92) 0%, rgba(55, 0, 60, 0.45) 55%, rgba(233, 0, 82, 0.35) 100%),
-    url('/images/football-action.png') center / cover no-repeat;
+    url('./assets/football-action.png') center / cover no-repeat;
   display: flex;
   align-items: flex-end;
   padding: 2rem;
@@ -478,7 +478,7 @@ body {
 
 .footer-pitch {
   height: 72px;
-  background: url('/images/hero-pitch.png') center / cover no-repeat;
+  background: url('./assets/hero-pitch.png') center / cover no-repeat;
   opacity: 0.55;
 }
 
