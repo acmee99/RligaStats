@@ -262,8 +262,9 @@ def get_player_stats():
     
     return jsonify(stats)
 
-
-import os
+@app.route('/')
+def index():
+    return jsonify({'status': 'ok'})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
