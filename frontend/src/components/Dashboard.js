@@ -152,6 +152,8 @@ const Dashboard = () => {
                   <th>Goals</th>
                   <th>Assists</th>
                   <th>Matches Played</th>
+                  <th>Black team</th>
+                  <th>White team</th>
                 </tr>
               </thead>
               <tbody>
@@ -161,6 +163,8 @@ const Dashboard = () => {
                     <td>{stat.total_goals}</td>
                     <td>{stat.total_assists}</td>
                     <td>{stat.matches_played}</td>
+                    <td>{stat.matches_black ?? 0}</td>
+                    <td>{stat.matches_white ?? 0}</td>
                   </tr>
                 ))}
               </tbody>

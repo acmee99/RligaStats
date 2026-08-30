@@ -3,6 +3,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
 from datetime import datetime, date
+from sqlalchemy.orm import joinedload
 from models import db, Player, Team, Match, MatchPlayer, Season
 from config import Config
 from image_processor import process_match_image
@@ -279,7 +280,9 @@ def get_player_stats():
     
     for player in players:
         # Get match stats for this player
-        match_players_query = MatchPlayer.query.filter_by(player_id=player.id)
+        match_players_query = MatchPlayer.query.options(
+            joinedload(MatchPlayer.team)
+        ).filter_by(player_id=player.id)
         
         if season_id:
             match_players_query = match_players_query.join(Match).filter(
@@ -291,12 +294,22 @@ def get_player_stats():
         total_goals = sum(mp.goals for mp in match_players)
         total_assists = sum(mp.assists for mp in match_players)
         matches_played = len(set(mp.match_id for mp in match_players))
+        matches_black = len({
+            mp.match_id for mp in match_players
+            if mp.team and (mp.team.color or '').lower() == 'black'
+        })
+        matches_white = len({
+            mp.match_id for mp in match_players
+            if mp.team and (mp.team.color or '').lower() == 'white'
+        })
         
         stats.append({
             'player': player.to_dict(),
             'total_goals': total_goals,
             'total_assists': total_assists,
-            'matches_played': matches_played
+            'matches_played': matches_played,
+            'matches_black': matches_black,
+            'matches_white': matches_white,
         })
     
     # Sort by total goals descending
