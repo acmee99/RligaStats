@@ -31,6 +31,7 @@ api.interceptors.response.use(
 
 export const login = (loginValue, password) =>
   api.post('/login', { login: loginValue, password });
+export const getMe = () => api.get('/me');
 export const getAuthSetup = () => api.get('/auth/setup');
 export const createAdminUser = (email, password, playerId) =>
   api.post('/users', { email, password, player_id: playerId });
