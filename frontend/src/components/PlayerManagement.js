@@ -16,6 +16,7 @@ const PlayerManagement = () => {
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [success, setSuccess] = useState(null);
+  const [activeTab, setActiveTab] = useState('players');
 
   useEffect(() => {
     loadPlayers();
@@ -132,12 +133,34 @@ const PlayerManagement = () => {
   return (
     <div className="players-page">
       <div className="card">
-        <h2>{isAdmin ? 'Player management' : 'Players'}</h2>
+        {isAdmin && (
+          <div className="page-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              className={`page-tab${activeTab === 'players' ? ' active' : ''}`}
+              aria-selected={activeTab === 'players'}
+              onClick={() => setActiveTab('players')}
+            >
+              Player management
+            </button>
+            <button
+              type="button"
+              role="tab"
+              className={`page-tab${activeTab === 'admin' ? ' active' : ''}`}
+              aria-selected={activeTab === 'admin'}
+              onClick={() => setActiveTab('admin')}
+            >
+              Register admin
+            </button>
+          </div>
+        )}
+        <h2>{isAdmin ? (activeTab === 'admin' ? 'Register admin' : 'Player management') : 'Players'}</h2>
         
         {error && <div className="error">{error}</div>}
         {success && <div className="success">{success}</div>}
 
-        {isAdmin && (
+        {isAdmin && activeTab === 'players' && (
         <form onSubmit={handleCreatePlayer} style={{ marginBottom: '2rem' }}>
           <div className="form-group">
             <label>Add new player</label>
@@ -161,10 +184,9 @@ const PlayerManagement = () => {
         </form>
         )}
 
-        {isAdmin && (
+        {isAdmin && activeTab === 'admin' && (
         <form onSubmit={handleCreateAdmin} style={{ marginBottom: '2rem' }}>
           <div className="form-group">
-            <label>Register admin</label>
             <p style={{ fontWeight: 500, marginBottom: '0.75rem', color: '#555' }}>
               Only an existing player can become an admin.
             </p>
@@ -206,6 +228,8 @@ const PlayerManagement = () => {
         </form>
         )}
 
+        {(!isAdmin || activeTab === 'players') && (
+        <>
         <h3>All players ({players.length})</h3>
         {players.length === 0 ? (
           <p style={{ color: '#666', marginTop: '1rem' }}>No players yet. Add your first player above!</p>
@@ -296,6 +320,8 @@ const PlayerManagement = () => {
               ))}
             </tbody>
           </table>
+        )}
+        </>
         )}
       </div>
     </div>

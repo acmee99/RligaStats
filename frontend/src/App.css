@@ -138,6 +138,41 @@ input[type="text"] {
   text-transform: none;
 }
 
+.page-tabs {
+  display: flex;
+  gap: 0;
+  margin: -0.25rem 0 1.25rem;
+  border-bottom: 3px solid #eee;
+}
+
+.page-tab {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -3px;
+  padding: 0.7rem 1.15rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #6b6570;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.page-tab:hover {
+  color: var(--pl-purple);
+}
+
+.page-tab.active {
+  color: var(--pl-purple);
+  border-bottom-color: var(--pl-magenta);
+}
+
+.players-page .card h2 {
+  text-transform: none;
+}
+
 .hero {
   position: relative;
   min-height: 200px;
