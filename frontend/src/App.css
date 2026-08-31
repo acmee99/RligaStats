@@ -110,6 +110,34 @@ input[type="text"] {
   color: #fff;
 }
 
+.nav-link-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.login-page {
+  display: flex;
+  justify-content: center;
+}
+
+.login-card {
+  width: min(420px, 100%);
+}
+
+.admin-badge {
+  display: inline-block;
+  background: var(--pl-magenta);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 2px;
+  text-transform: none;
+}
+
 .hero {
   position: relative;
   min-height: 200px;

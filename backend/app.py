@@ -1,13 +1,16 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from datetime import datetime, date
 from sqlalchemy.orm import joinedload
-from sqlalchemy import inspect, text
-from models import db, Player, Team, Match, MatchPlayer, Season
+from sqlalchemy import inspect, text, func, or_
+from models import db, Player, Team, Match, MatchPlayer, Season, User
 from config import Config
 from image_processor import process_match_image
+from auth import require_admin, create_token, user_from_token, get_admin_from_request
+from itsdangerous import BadSignature, SignatureExpired
 import json
 
 app = Flask(__name__)
@@ -19,7 +22,7 @@ CORS(
         'http://localhost:3000',
     ],
     supports_credentials=False,
-    allow_headers=['Content-Type'],
+    allow_headers=['Content-Type', 'Authorization'],
     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 )
 
@@ -48,6 +51,15 @@ def init_db():
                 else:
                     db.session.execute(text('ALTER TABLE matches ADD COLUMN not_played BOOLEAN DEFAULT FALSE'))
                 db.session.commit()
+
+        if 'users' in inspector.get_table_names():
+            user_columns = [col['name'] for col in inspector.get_columns('users')]
+            if 'player_id' not in user_columns:
+                if db.engine.dialect.name == 'sqlite':
+                    db.session.execute(text('ALTER TABLE users ADD COLUMN player_id INTEGER'))
+                else:
+                    db.session.execute(text('ALTER TABLE users ADD COLUMN player_id INTEGER UNIQUE REFERENCES players(id)'))
+                db.session.commit()
         
         # Create default teams if they don't exist
         if Team.query.count() == 0:
@@ -56,6 +68,59 @@ def init_db():
             db.session.add(team1)
             db.session.add(team2)
             db.session.commit()
+
+        seed_admin_from_env()
+
+
+def seed_admin_from_env():
+    email = (os.environ.get('ADMIN_EMAIL') or '').strip().lower()
+    username = (os.environ.get('ADMIN_USERNAME') or '').strip()
+    password = os.environ.get('ADMIN_PASSWORD') or ''
+    if User.query.count() > 0:
+        return
+    if not email or not username or not password:
+        print('No admin users yet. Set ADMIN_EMAIL, ADMIN_USERNAME and ADMIN_PASSWORD, or register the first admin from a player in the app.')
+        return
+    player = Player.query.filter(func.lower(Player.name) == username.lower()).first()
+    if not player:
+        player = Player(name=username)
+        db.session.add(player)
+        db.session.flush()
+    db.session.add(User(
+        email=email,
+        username=player.name,
+        password_hash=generate_password_hash(password),
+        player_id=player.id,
+    ))
+    db.session.commit()
+
+
+def create_admin_user(email, password, player_id):
+    email = (email or '').strip().lower()
+    password = password or ''
+    if not email or not password or not player_id:
+        return None, ('Email, password and player are required', 400)
+    player = db.session.get(Player, int(player_id))
+    if not player:
+        return None, ('Player not found', 400)
+    existing = User.query.filter(
+        or_(
+            func.lower(User.email) == email,
+            User.player_id == player.id,
+            func.lower(User.username) == player.name.lower(),
+        )
+    ).first()
+    if existing:
+        return None, ('This player or email is already an admin', 400)
+    user = User(
+        email=email,
+        username=player.name,
+        password_hash=generate_password_hash(password),
+        player_id=player.id,
+    )
+    db.session.add(user)
+    db.session.commit()
+    return user, None
 
 def season_for_date(match_date):
     if match_date.month >= 9:
@@ -85,13 +150,88 @@ def replace_match_players(match_id, players):
             assists=player_data.get('assists', 0)
         ))
 
+# Auth
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json or {}
+    login_value = (data.get('login') or data.get('email') or data.get('username') or '').strip()
+    password = data.get('password') or ''
+    if not login_value or not password:
+        return jsonify({'error': 'Login and password are required'}), 400
+
+    lookup = login_value.lower()
+    user = User.query.filter(
+        or_(func.lower(User.email) == lookup, func.lower(User.username) == lookup)
+    ).first()
+    if not user or not check_password_hash(user.password_hash, password):
+        return jsonify({'error': 'Invalid login or password'}), 401
+
+    return jsonify({
+        'token': create_token(user.id),
+        'user': user.to_dict(),
+    })
+
+
+@app.route('/api/me', methods=['GET'])
+def me():
+    header = request.headers.get('Authorization', '')
+    if not header.startswith('Bearer '):
+        return jsonify({'error': 'Authentication required'}), 401
+    try:
+        user = user_from_token(header[7:].strip())
+    except (BadSignature, SignatureExpired):
+        return jsonify({'error': 'Invalid or expired token'}), 401
+    if not user:
+        return jsonify({'error': 'Authentication required'}), 401
+    return jsonify(user.to_dict())
+
+
+@app.route('/api/auth/setup', methods=['GET'])
+def auth_setup():
+    return jsonify({'has_admins': User.query.count() > 0})
+
+
+@app.route('/api/users', methods=['POST'])
+def create_user():
+    if User.query.count() > 0 and not get_admin_from_request():
+        return jsonify({'error': 'Authentication required'}), 401
+    data = request.json or {}
+    try:
+        player_id = int(data.get('player_id'))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Email, password and player are required'}), 400
+    user, error = create_admin_user(
+        data.get('email'),
+        data.get('password'),
+        player_id,
+    )
+    if error:
+        return jsonify({'error': error[0]}), error[1]
+    return jsonify(user.to_dict()), 201
+
+
 # Player endpoints
+def player_payload(player, admin_ids):
+    data = player.to_dict()
+    data['is_admin'] = player.id in admin_ids
+    return data
+
+
+def admin_player_ids():
+    return {
+        user.player_id
+        for user in User.query.filter(User.player_id.isnot(None)).all()
+    }
+
+
 @app.route('/api/players', methods=['GET'])
 def get_players():
     players = Player.query.order_by(Player.name).all()
-    return jsonify([p.to_dict() for p in players])
+    ids = admin_player_ids()
+    return jsonify([player_payload(p, ids) for p in players])
 
 @app.route('/api/players', methods=['POST'])
+@require_admin
 def create_player():
     data = request.json
     if not data or not data.get('name'):
@@ -105,9 +245,10 @@ def create_player():
     player = Player(name=data['name'])
     db.session.add(player)
     db.session.commit()
-    return jsonify(player.to_dict()), 201
+    return jsonify(player_payload(player, set())), 201
 
 @app.route('/api/players/<int:player_id>', methods=['PUT'])
+@require_admin
 def update_player(player_id):
     player = Player.query.get_or_404(player_id)
     data = request.json
@@ -118,12 +259,18 @@ def update_player(player_id):
     if existing:
         return jsonify({'error': 'Player already exists'}), 400
     player.name = name
+    linked = User.query.filter_by(player_id=player.id).first()
+    if linked:
+        linked.username = name
     db.session.commit()
-    return jsonify(player.to_dict())
+    return jsonify(player_payload(player, admin_player_ids()))
 
 @app.route('/api/players/<int:player_id>', methods=['DELETE'])
+@require_admin
 def delete_player(player_id):
     player = Player.query.get_or_404(player_id)
+    if User.query.filter_by(player_id=player.id).first():
+        return jsonify({'error': 'Cannot delete a player who is an admin'}), 400
     db.session.delete(player)
     db.session.commit()
     return jsonify({'message': 'Player deleted'}), 200
@@ -149,6 +296,7 @@ def get_current_season():
 
 # Image upload and processing
 @app.route('/api/upload', methods=['POST'])
+@require_admin
 def upload_image():
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
@@ -191,6 +339,7 @@ def get_matches():
     return jsonify([m.to_dict() for m in matches])
 
 @app.route('/api/matches', methods=['POST'])
+@require_admin
 def create_match():
     data = request.json
     
@@ -235,6 +384,7 @@ def get_match(match_id):
     return jsonify(match.to_dict())
 
 @app.route('/api/matches/<int:match_id>', methods=['PUT'])
+@require_admin
 def update_match(match_id):
     match = Match.query.get_or_404(match_id)
     data = request.json
@@ -270,6 +420,7 @@ def update_match(match_id):
     return jsonify(match.to_dict())
 
 @app.route('/api/matches/<int:match_id>', methods=['DELETE'])
+@require_admin
 def delete_match(match_id):
     match = Match.query.get_or_404(match_id)
     db.session.delete(match)

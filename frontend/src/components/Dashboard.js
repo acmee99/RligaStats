@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getTeamStats, getPlayerStats, getSeasons, getCurrentSeason, getMatches, getPlayers, getTeams, deleteMatch } from '../services/api';
 import MatchEditModal from './MatchEditModal';
+import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
+  const { isAdmin } = useAuth();
   const [teamStats, setTeamStats] = useState([]);
   const [playerStats, setPlayerStats] = useState([]);
   const [matches, setMatches] = useState([]);
@@ -188,7 +190,7 @@ const Dashboard = () => {
                     <th>Score</th>
                     <th>Team 2</th>
                     <th>Funny fact</th>
-                    <th></th>
+                    {isAdmin && <th></th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -211,6 +213,7 @@ const Dashboard = () => {
                         />
                       </td>
                       <td className="funny-fact-cell">{match.funny_fact || '—'}</td>
+                      {isAdmin && (
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                           <button
@@ -231,6 +234,7 @@ const Dashboard = () => {
                           </button>
                         </div>
                       </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

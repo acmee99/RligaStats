@@ -133,3 +133,23 @@ class MatchPlayer(db.Model):
             'goals': self.goals,
             'assists': self.assists
         }
+
+class User(db.Model):
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    player_id = db.Column(db.Integer, db.ForeignKey('players.id'), unique=True, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    player = db.relationship('Player', backref='admin_user')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'username': self.username,
+            'player_id': self.player_id,
+        }

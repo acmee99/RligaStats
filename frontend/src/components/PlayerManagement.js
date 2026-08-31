@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { getPlayers, createPlayer, updatePlayer, deletePlayer } from '../services/api';
+import { getPlayers, createPlayer, updatePlayer, deletePlayer, createAdminUser } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const PlayerManagement = () => {
+  const { isAdmin } = useAuth();
   const [players, setPlayers] = useState([]);
   const [newPlayerName, setNewPlayerName] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [loading, setLoading] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
-  const [error, setError] = useState(null);
+  const [savingAdmin, setSavingAdmin] = useState(false);
+  const [adminPlayerId, setAdminPlayerId] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [success, setSuccess] = useState(null);
 
   useEffect(() => {
@@ -98,14 +103,40 @@ const PlayerManagement = () => {
     }
   };
 
+  const handleCreateAdmin = async (e) => {
+    e.preventDefault();
+    if (!adminPlayerId || !adminEmail.trim() || !adminPassword) {
+      setError('Player, email and password are required');
+      return;
+    }
+    setSavingAdmin(true);
+    setError(null);
+    try {
+      await createAdminUser(adminEmail.trim(), adminPassword, parseInt(adminPlayerId, 10));
+      setAdminPlayerId('');
+      setAdminEmail('');
+      setAdminPassword('');
+      setSuccess('Admin registered successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+      await loadPlayers();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to register admin');
+    } finally {
+      setSavingAdmin(false);
+    }
+  };
+
+  const availableAdminPlayers = players.filter((p) => !p.is_admin);
+
   return (
     <div className="players-page">
       <div className="card">
-        <h2>Player management</h2>
+        <h2>{isAdmin ? 'Player management' : 'Players'}</h2>
         
         {error && <div className="error">{error}</div>}
         {success && <div className="success">{success}</div>}
 
+        {isAdmin && (
         <form onSubmit={handleCreatePlayer} style={{ marginBottom: '2rem' }}>
           <div className="form-group">
             <label>Add new player</label>
@@ -127,6 +158,52 @@ const PlayerManagement = () => {
             </div>
           </div>
         </form>
+        )}
+
+        {isAdmin && (
+        <form onSubmit={handleCreateAdmin} style={{ marginBottom: '2rem' }}>
+          <div className="form-group">
+            <label>Register admin</label>
+            <p style={{ fontWeight: 500, marginBottom: '0.75rem', color: '#555' }}>
+              Only an existing player can become an admin.
+            </p>
+            <select
+              value={adminPlayerId}
+              onChange={(e) => setAdminPlayerId(e.target.value)}
+              required
+              style={{ marginBottom: '0.75rem' }}
+            >
+              <option value="">Select player</option>
+              {availableAdminPlayers.map((player) => (
+                <option key={player.id} value={player.id}>{player.name}</option>
+              ))}
+            </select>
+            <input
+              type="email"
+              value={adminEmail}
+              onChange={(e) => setAdminEmail(e.target.value)}
+              placeholder="Email"
+              required
+              style={{ marginBottom: '0.75rem' }}
+            />
+            <input
+              type="password"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              placeholder="Password"
+              required
+              style={{ marginBottom: '0.75rem' }}
+            />
+            <button
+              type="submit"
+              className="btn btn-secondary"
+              disabled={savingAdmin || !adminPlayerId || !adminEmail.trim() || !adminPassword}
+            >
+              {savingAdmin ? 'Registering...' : 'Register admin'}
+            </button>
+          </div>
+        </form>
+        )}
 
         <h3>All players ({players.length})</h3>
         {players.length === 0 ? (
@@ -137,7 +214,8 @@ const PlayerManagement = () => {
               <tr>
                 <th>Id</th>
                 <th>Name</th>
-                <th>Actions</th>
+                <th>Admin</th>
+                {isAdmin && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -145,7 +223,7 @@ const PlayerManagement = () => {
                 <tr key={player.id}>
                   <td>{player.id}</td>
                   <td>
-                    {editingId === player.id ? (
+                    {isAdmin && editingId === player.id ? (
                       <input
                         type="text"
                         value={editName}
@@ -165,6 +243,10 @@ const PlayerManagement = () => {
                       player.name
                     )}
                   </td>
+                  <td>
+                    {player.is_admin ? <span className="admin-badge">Admin</span> : '—'}
+                  </td>
+                  {isAdmin && (
                   <td>
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                       {editingId === player.id ? (
@@ -208,6 +290,7 @@ const PlayerManagement = () => {
                       </button>
                     </div>
                   </td>
+                  )}
                 </tr>
               ))}
             </tbody>
