@@ -10,6 +10,7 @@ const PlayerManagement = () => {
   const [editName, setEditName] = useState('');
   const [loading, setLoading] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [error, setError] = useState(null);
   const [savingAdmin, setSavingAdmin] = useState(false);
   const [adminPlayerId, setAdminPlayerId] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
