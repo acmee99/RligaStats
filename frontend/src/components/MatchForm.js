@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getPlayers, getTeams, getCurrentSeason, createMatch } from '../services/api';
 import { format } from 'date-fns';
 import DatePicker from './DatePicker';
 
 const MatchForm = () => {
+  const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
   const [teams, setTeams] = useState([]);
   const [currentSeason, setCurrentSeason] = useState(null);
@@ -14,7 +16,6 @@ const MatchForm = () => {
   const [team2Players, setTeam2Players] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [funnyFact, setFunnyFact] = useState('');
   const [notPlayed, setNotPlayed] = useState(false);
 
@@ -87,13 +88,24 @@ const MatchForm = () => {
   };
 
   const handleSubmit = async () => {
-    if (!selectedTeam1 || !selectedTeam2) {
-      setError('Please select both teams');
-      return;
+    const problems = [];
+    if (!matchDate) {
+      problems.push('select a match date');
     }
-
-    if (!notPlayed && (team1Players.length === 0 || team2Players.length === 0)) {
-      setError('Each team must have at least one player');
+    if (!selectedTeam1 || !selectedTeam2) {
+      problems.push('both teams must be available');
+    }
+    if (!notPlayed) {
+      if (team1Players.length === 0) {
+        problems.push('add at least one player to Black');
+      }
+      if (team2Players.length === 0) {
+        problems.push('add at least one player to White');
+      }
+    }
+    if (problems.length > 0) {
+      setError(`Match cannot be saved: ${problems.join('; ')}.`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -124,14 +136,10 @@ const MatchForm = () => {
         not_played: notPlayed,
       });
 
-      setSuccess('Match created successfully!');
-      setTeam1Players([]);
-      setTeam2Players([]);
-      setFunnyFact('');
-      setNotPlayed(false);
-      setTimeout(() => setSuccess(null), 3000);
+      navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create match');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       console.error(err);
     } finally {
       setLoading(false);
@@ -156,7 +164,6 @@ const MatchForm = () => {
         <h2>Create New Match (Manual Entry)</h2>
         
         {error && <div className="error">{error}</div>}
-        {success && <div className="success">{success}</div>}
 
         <div className="form-group">
           <label>Match date</label>
@@ -322,8 +329,9 @@ const MatchForm = () => {
 
         <button
           className="btn btn-primary"
+          type="button"
           onClick={handleSubmit}
-          disabled={loading || (!notPlayed && (team1Players.length === 0 || team2Players.length === 0))}
+          disabled={loading}
           style={{ marginTop: '2rem', width: '100%' }}
         >
           {loading ? 'Creating Match...' : 'Create Match'}
