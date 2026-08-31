@@ -20,7 +20,7 @@ function AppShell() {
             <img src={logo} alt="Rliga" className="nav-logo-img" />
             <span>
               Rliga
-              <small>Hobby league stats</small>
+              <small>Středeční fotbálek stats</small>
             </span>
           </NavLink>
           <div className="nav-menu">

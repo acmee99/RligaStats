@@ -1,7 +1,36 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getTeamStats, getPlayerStats, getSeasons, getCurrentSeason, getMatches, getPlayers, getTeams, deleteMatch } from '../services/api';
+import { addDays, getDay } from 'date-fns';
+import { getTeamStats, getPlayerStats, getSeasons, getMatches, getPlayers, getTeams, deleteMatch } from '../services/api';
 import MatchEditModal from './MatchEditModal';
 import { useAuth } from '../context/AuthContext';
+
+const OVERALL = 'overall';
+const HISTORICAL_SEASONS_URL =
+  'https://docs.google.com/spreadsheets/d/15CiOc_4Xp6jKBgq5j2im0rHJOyXJOmtsNjc_U-Nicz0/edit?gid=97946016#gid=97946016';
+
+const countWednesdays = (fromDate, toDate) => {
+  const start = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+  const end = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+  let day = start;
+  while (getDay(day) !== 3) {
+    day = addDays(day, 1);
+    if (day > end) return 0;
+  }
+  let count = 0;
+  while (day <= end) {
+    count += 1;
+    day = addDays(day, 7);
+  }
+  return count;
+};
+
+const seasonWednesdayCount = (season) => {
+  if (!season) return 0;
+  return countWednesdays(
+    new Date(season.start_year, 8, 1),
+    new Date(season.end_year, 7, 31)
+  );
+};
 
 const Dashboard = () => {
   const { isAdmin } = useAuth();
@@ -12,6 +41,7 @@ const Dashboard = () => {
   const [teams, setTeams] = useState([]);
   const [seasons, setSeasons] = useState([]);
   const [selectedSeason, setSelectedSeason] = useState(null);
+  const [dashboardTab, setDashboardTab] = useState('league');
   const [editingMatch, setEditingMatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,19 +53,17 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedSeason) {
+    if (selectedSeason !== null) {
       loadStats();
     }
   }, [selectedSeason]);
 
   const loadSeasons = async () => {
     try {
-      const [seasonsRes, currentSeasonRes] = await Promise.all([
-        getSeasons(),
-        getCurrentSeason()
-      ]);
-      setSeasons(seasonsRes.data);
-      setSelectedSeason(currentSeasonRes.data.id);
+      const seasonsRes = await getSeasons();
+      const list = [...seasonsRes.data].sort((a, b) => b.start_year - a.start_year);
+      setSeasons(list);
+      setSelectedSeason(list[0]?.id ?? OVERALL);
       const [playersRes, teamsRes] = await Promise.all([getPlayers(), getTeams()]);
       setPlayers(playersRes.data);
       setTeams(teamsRes.data);
@@ -49,10 +77,11 @@ const Dashboard = () => {
     setLoading(true);
     setError(null);
     try {
+      const seasonId = selectedSeason === OVERALL ? undefined : selectedSeason;
       const [teamsRes, playersRes, matchesRes] = await Promise.all([
-        getTeamStats(selectedSeason),
-        getPlayerStats(selectedSeason),
-        getMatches(selectedSeason)
+        getTeamStats(seasonId),
+        getPlayerStats(seasonId),
+        getMatches(seasonId)
       ]);
       setTeamStats(teamsRes.data);
       setPlayerStats(playersRes.data);
@@ -106,6 +135,24 @@ const Dashboard = () => {
 
   const sortMark = (key) => (sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '');
 
+  const gameSummary = useMemo(() => {
+    const played = matches.filter((m) => !m.not_played).length;
+    const notPlayed = matches.filter((m) => m.not_played).length;
+    let totalWednesdays = 0;
+    if (selectedSeason === OVERALL) {
+      totalWednesdays = seasons.reduce((sum, season) => sum + seasonWednesdayCount(season), 0);
+    } else {
+      const season = seasons.find((s) => s.id === selectedSeason);
+      totalWednesdays = seasonWednesdayCount(season);
+    }
+    return {
+      totalMatches: totalWednesdays,
+      gamesPlayed: played,
+      gamesNotPlayed: notPlayed,
+      gamesRemaining: Math.max(0, totalWednesdays - played - notPlayed),
+    };
+  }, [matches, seasons, selectedSeason]);
+
   const teamPlayersForMatch = (match, teamId) =>
     (match.player_stats || []).filter((ps) => ps.team?.id === teamId);
 
@@ -122,7 +169,7 @@ const Dashboard = () => {
     }
   };
 
-  if (loading && !selectedSeason) {
+  if (loading && selectedSeason === null) {
     return <div className="loading">Loading...</div>;
   }
 
@@ -136,15 +183,53 @@ const Dashboard = () => {
         </div>
       </section>
       <div className="card">
+        <div className="page-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            className={`page-tab${dashboardTab === 'league' ? ' active' : ''}`}
+            aria-selected={dashboardTab === 'league'}
+            onClick={() => setDashboardTab('league')}
+          >
+            League table &amp; stats
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={`page-tab${dashboardTab === 'history' ? ' active' : ''}`}
+            aria-selected={dashboardTab === 'history'}
+            onClick={() => setDashboardTab('history')}
+          >
+            Historical seasons
+          </button>
+        </div>
+
+        {dashboardTab === 'history' ? (
+          <div className="historical-seasons">
+            <h2>Historical seasons</h2>
+            <a
+              href={HISTORICAL_SEASONS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Season: 2025-2026 and olders
+            </a>
+          </div>
+        ) : (
+          <>
         <h2>League table &amp; stats</h2>
         
         <div className="season-selector">
           <label htmlFor="season-select">Season </label>
           <select
             id="season-select"
-            value={selectedSeason || ''}
-            onChange={(e) => setSelectedSeason(parseInt(e.target.value))}
+            value={selectedSeason ?? ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSelectedSeason(value === OVERALL ? OVERALL : parseInt(value, 10));
+            }}
           >
+            <option value={OVERALL}>Overall</option>
             {seasons.map(season => (
               <option key={season.id} value={season.id}>
                 {season.name}
@@ -159,10 +244,56 @@ const Dashboard = () => {
           <div className="loading">Loading statistics...</div>
         ) : (
           <>
-            <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>Team statistics</h3>
+            <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>
+              Player statistics
+              {selectedSeason === OVERALL ? ' — Overall' : ''}
+            </h3>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th className="sortable" onClick={() => handleSort('player')}>Player{sortMark('player')}</th>
+                  <th className="sortable" onClick={() => handleSort('ranking')}>Ranking{sortMark('ranking')}</th>
+                  <th className="sortable" onClick={() => handleSort('points')}>Points{sortMark('points')}</th>
+                  <th className="sortable" onClick={() => handleSort('total_goals')}>Goals{sortMark('total_goals')}</th>
+                  <th className="sortable" onClick={() => handleSort('total_assists')}>Assists{sortMark('total_assists')}</th>
+                  <th className="sortable" onClick={() => handleSort('matches_played')}>Matches played{sortMark('matches_played')}</th>
+                  <th className="sortable" onClick={() => handleSort('matches_black')}>Black team{sortMark('matches_black')}</th>
+                  <th className="sortable" onClick={() => handleSort('matches_white')}>White team{sortMark('matches_white')}</th>
+                  <th className="sortable" onClick={() => handleSort('ppm')}>Ppm{sortMark('ppm')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedPlayerStats.map(stat => (
+                  <tr key={stat.player.id}>
+                    <td>{stat.player.name}</td>
+                    <td>{stat.ranking}</td>
+                    <td>{stat.points}</td>
+                    <td>{stat.total_goals}</td>
+                    <td>{stat.total_assists}</td>
+                    <td>{stat.matches_played}</td>
+                    <td>{stat.matches_black ?? 0}</td>
+                    <td>{stat.matches_white ?? 0}</td>
+                    <td>{Number(stat.ppm).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="section-heading-row">
+              <h3>Team statistics</h3>
+              <div className="season-game-meta">
+                <span>Total matches: {gameSummary.totalMatches}</span>
+                <span>Games played: {gameSummary.gamesPlayed}</span>
+                <span>Games not played: {gameSummary.gamesNotPlayed}</span>
+                <span>Games remaining: {gameSummary.gamesRemaining}</span>
+              </div>
+            </div>
             <div className="stats-grid">
               {teamStats.map(stat => (
-                <div key={stat.team.id} className="stat-card">
+                <div
+                  key={stat.team.id}
+                  className={`stat-card${(stat.team.color || '').toLowerCase() === 'black' ? ' team-black' : ''}`}
+                >
                   <h3>{stat.team.name}</h3>
                   <div className="stat-value">{stat.wins}</div>
                   <div style={{ marginTop: '0.5rem' }}>
@@ -170,9 +301,6 @@ const Dashboard = () => {
                   </div>
                   <div style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
                     Total matches: {stat.total_matches}
-                  </div>
-                  <div style={{ marginTop: '0.35rem', fontSize: '0.9rem' }}>
-                    Games not played: {stat.matches_not_played ?? 0}
                   </div>
                 </div>
               ))}
@@ -240,38 +368,8 @@ const Dashboard = () => {
                 </tbody>
               </table>
             )}
-
-            <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>Player statistics</h3>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th className="sortable" onClick={() => handleSort('player')}>Player{sortMark('player')}</th>
-                  <th className="sortable" onClick={() => handleSort('ranking')}>Ranking{sortMark('ranking')}</th>
-                  <th className="sortable" onClick={() => handleSort('points')}>Points{sortMark('points')}</th>
-                  <th className="sortable" onClick={() => handleSort('total_goals')}>Goals{sortMark('total_goals')}</th>
-                  <th className="sortable" onClick={() => handleSort('total_assists')}>Assists{sortMark('total_assists')}</th>
-                  <th className="sortable" onClick={() => handleSort('matches_played')}>Matches played{sortMark('matches_played')}</th>
-                  <th className="sortable" onClick={() => handleSort('matches_black')}>Black team{sortMark('matches_black')}</th>
-                  <th className="sortable" onClick={() => handleSort('matches_white')}>White team{sortMark('matches_white')}</th>
-                  <th className="sortable" onClick={() => handleSort('ppm')}>Ppm{sortMark('ppm')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedPlayerStats.map(stat => (
-                  <tr key={stat.player.id}>
-                    <td>{stat.player.name}</td>
-                    <td>{stat.ranking}</td>
-                    <td>{stat.points}</td>
-                    <td>{stat.total_goals}</td>
-                    <td>{stat.total_assists}</td>
-                    <td>{stat.matches_played}</td>
-                    <td>{stat.matches_black ?? 0}</td>
-                    <td>{stat.matches_white ?? 0}</td>
-                    <td>{Number(stat.ppm).toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          </>
+        )}
           </>
         )}
       </div>

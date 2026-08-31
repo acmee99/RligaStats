@@ -493,6 +493,49 @@ input[type="text"] {
   color: var(--pl-magenta);
 }
 
+.stat-card.team-black {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+  border-bottom-color: var(--pl-magenta);
+}
+
+.stat-card.team-black h3,
+.stat-card.team-black small,
+.stat-card.team-black .stat-value {
+  color: #fff;
+  opacity: 1;
+}
+
+.section-heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  margin: 2rem 0 1rem;
+}
+
+.section-heading-row h3 {
+  margin: 0;
+}
+
+.season-game-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #444;
+}
+
+.historical-seasons a {
+  color: var(--pl-magenta);
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-transform: none;
+}
+
 .loading {
   text-align: center;
   padding: 2rem;
