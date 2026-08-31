@@ -32,6 +32,13 @@ const seasonWednesdayCount = (season) => {
   );
 };
 
+const teamShortName = (team) => {
+  const color = (team?.color || '').toLowerCase();
+  if (color === 'black') return 'Black';
+  if (color === 'white') return 'White';
+  return team?.name || '';
+};
+
 const Dashboard = () => {
   const { isAdmin } = useAuth();
   const [teamStats, setTeamStats] = useState([]);
@@ -220,6 +227,7 @@ const Dashboard = () => {
         <h2>League table &amp; stats</h2>
         
         <div className="season-selector">
+          <p className="season-hint">Season runs September – August</p>
           <label htmlFor="season-select">Season </label>
           <select
             id="season-select"
@@ -299,9 +307,6 @@ const Dashboard = () => {
                   <div style={{ marginTop: '0.5rem' }}>
                     <small>Wins: {stat.wins} | Draws: {stat.draws} | Losses: {stat.losses}</small>
                   </div>
-                  <div style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
-                    Total matches: {stat.total_matches}
-                  </div>
                 </div>
               ))}
             </div>
@@ -314,10 +319,10 @@ const Dashboard = () => {
                 <thead>
                   <tr>
                     <th>Date</th>
-                    <th>Team 1</th>
+                    <th>Black</th>
                     <th>Score</th>
-                    <th>Team 2</th>
-                    <th>Funny fact</th>
+                    <th>White</th>
+                    <th>Fun fact</th>
                     {isAdmin && <th></th>}
                   </tr>
                 </thead>
@@ -327,7 +332,7 @@ const Dashboard = () => {
                       <td>{match.date}</td>
                       <td>
                         <MatchTeamHover
-                          teamName={match.team1?.name}
+                          teamName={teamShortName(match.team1)}
                           notPlayed={match.not_played}
                           players={teamPlayersForMatch(match, match.team1?.id)}
                         />
@@ -335,7 +340,7 @@ const Dashboard = () => {
                       <td>{match.not_played ? 'Not played' : `${match.team1_score} – ${match.team2_score}`}</td>
                       <td>
                         <MatchTeamHover
-                          teamName={match.team2?.name}
+                          teamName={teamShortName(match.team2)}
                           notPlayed={match.not_played}
                           players={teamPlayersForMatch(match, match.team2?.id)}
                         />

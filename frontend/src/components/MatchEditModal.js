@@ -128,7 +128,7 @@ const MatchEditModal = ({ match, teams, players, onClose, onSaved }) => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="edit-funny-fact">Funny fact</label>
+          <label htmlFor="edit-funny-fact">Fun fact</label>
           <textarea
             id="edit-funny-fact"
             className="text-normal"

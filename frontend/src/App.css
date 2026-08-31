@@ -426,12 +426,14 @@ input[type="text"] {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
   border: 1px solid #c8c8c8;
   border-radius: 4px;
-  padding: 0.5rem 0.55rem;
+  padding: 0;
+  overflow: hidden;
   text-transform: none;
 }
 
 .match-team-popover-inner p {
   margin: 0;
+  padding: 0.5rem 0.55rem;
   font-weight: 500;
   font-size: 0.85rem;
 }
@@ -440,12 +442,23 @@ input[type="text"] {
   border-collapse: collapse;
   width: 100%;
   margin: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.match-team-popover-inner table,
-.match-team-popover-inner tbody tr,
-.match-team-popover-inner th,
-.match-team-popover-inner td {
+.table .match-team-popover-inner table,
+.table .match-team-popover-inner tbody,
+.table .match-team-popover-inner tbody tr,
+.table .match-team-popover-inner th,
+.table .match-team-popover-inner td {
+  background: #e6e6e6 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.table tbody tr:nth-child(even) .match-team-popover-inner tbody tr,
+.table tbody tr:hover .match-team-popover-inner tbody tr,
+.table .match-team-popover-inner tbody tr:hover {
   background: #e6e6e6 !important;
 }
 
@@ -679,6 +692,16 @@ input[type="text"] {
   font-weight: 700;
   font-family: inherit;
   margin-left: 0.5rem;
+}
+
+.season-hint {
+  display: block;
+  margin: 0 0 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: none;
+  letter-spacing: 0.02em;
 }
 
 .modal-overlay {

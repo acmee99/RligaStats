@@ -69,7 +69,27 @@ def init_db():
             db.session.add(team2)
             db.session.commit()
 
+        reset_match_history_once()
+
         seed_admin_from_env()
+
+
+def reset_match_history_once():
+    """One-time wipe of matches and seasons so 2025/2026 is not listed empty."""
+    db.session.execute(text(
+        'CREATE TABLE IF NOT EXISTS app_flags (flag_key VARCHAR(64) PRIMARY KEY)'
+    ))
+    db.session.commit()
+    existing = db.session.execute(
+        text("SELECT flag_key FROM app_flags WHERE flag_key = 'wipe_matches_2026_08'")
+    ).fetchone()
+    if existing:
+        return
+    MatchPlayer.query.delete()
+    Match.query.delete()
+    Season.query.delete()
+    db.session.execute(text("INSERT INTO app_flags (flag_key) VALUES ('wipe_matches_2026_08')"))
+    db.session.commit()
 
 
 def seed_admin_from_env():
@@ -284,8 +304,8 @@ def get_teams():
 # Season endpoints
 @app.route('/api/seasons', methods=['GET'])
 def get_seasons():
-    Season.get_or_create_season(Season.get_current_season())
     seasons = Season.query.order_by(Season.start_year.desc()).all()
+    seasons = [s for s in seasons if Match.query.filter_by(season_id=s.id).count() > 0]
     return jsonify([s.to_dict() for s in seasons])
 
 @app.route('/api/seasons/current', methods=['GET'])

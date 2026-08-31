@@ -308,7 +308,7 @@ const MatchForm = () => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="funny-fact">Funny fact</label>
+          <label htmlFor="funny-fact">Fun fact</label>
           <textarea
             id="funny-fact"
             className="text-normal"
