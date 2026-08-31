@@ -19,6 +19,8 @@ CORS(
     app,
     origins=[
         'https://rligastats-frontend.onrender.com',
+        'https://rliga.cloud',
+        'https://www.rliga.cloud',
         'http://localhost:3000',
     ],
     supports_credentials=False,
